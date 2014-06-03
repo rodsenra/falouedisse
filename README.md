@@ -33,6 +33,8 @@ A project to demonstrate maximum entropy models for extracting quotes from news 
 cdavis@cironline.org
 http://cironline.org/person/chase-davis
 
+https://github.com/grangier/python-goose
+The aim of the software is is to take any news article or article type web page and not only extract what is the main body of the article but also all meta data and most probable image candidate.
 
 Theory
 ======
