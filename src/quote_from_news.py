@@ -12,12 +12,39 @@ ATTRIBUTION_WORDS_STEMMED = [u'disse', u'afirmou', u'comentou', u'completou', u'
 PRONOUNS = ['ele', 'ela']
 
 
+class Quotation(object):
+
+    def __init__(self, phrase, verb):
+        self.phrase = phrase
+        self.verb = verb
+
+    def contains(self, sentence):
+        word_present = 0
+        for word in sentence:
+            if word in self.phrase:
+                word_present += 1
+        return (word_present > len(sentence) - 4)
+
+    def __unicode__(self):
+        return self.phrase
+
+
 def find_quotes(text):
     pat = re.compile(r"\"(.*?)\",\s+(\w+)", re.UNICODE)
     normalized = text.replace(u'\u201c', '"')
     normalized = normalized.replace(u'\u201d', '"')
     matches = pat.findall(normalized)
-    return matches
+    return [Quotation(phrase, verb) for phrase, verb in matches]
+
+
+def annotate_quotes_with_line_numbers(quotes, sentences):
+    numbered_sentences = list(enumerate(sentences))
+    for quotation in quotes:
+        positions = []
+        for pos, sentence in numbered_sentences:
+            if quotation.contains(sentence):
+                positions.append(pos)
+        quotation.positions = positions
 
 
 def fetch_article(url, language='pt'):
@@ -52,7 +79,7 @@ def heuristic_elect_candidate(candidates):
                 continue
             if other_name in name:
                 names[name] += count
-    won = sorted(((v,k) for k,v in names.items()))[-1][1]
+    won = sorted(((v, k) for k, v in names.items()))[-1][1]
     return won
 
 
@@ -62,7 +89,7 @@ word_tokenizer = WordPunctTokenizer()
 
 def text_to_sentences(raw_text):
     sentences = sentence_tokenizer.tokenize(raw_text)
-    tokenized_sentences = (word_tokenizer.tokenize(sentence) for sentence in sentences)
+    tokenized_sentences = [word_tokenizer.tokenize(sentence) for sentence in sentences]
     return tokenized_sentences
 
 if __name__ == "__main__":
@@ -74,10 +101,11 @@ if __name__ == "__main__":
     ner_sentences = [nltk.ne_chunk(s) for s in tagged_sentences]
     candidates = [(pos, ner_candidates(s, 'PERSON')) for pos,s in enumerate(ner_sentences)]
     quotes = find_quotes(article.text)
+    annotate_quotes_with_line_numbers(quotes, sentences)
     who = heuristic_elect_candidate(candidates)
     print("\n{0}\n".format(who))
-    for said, verb in quotes:
-        print(said)
+    for quotation in quotes:
+        print(quotation.phrase)
         print("\n")
 
 # MIXED  = http://g1.globo.com/politica/noticia/2014/06/ministro-volta-negar-que-snowden-tenha-pedido-asilo-ao-brasil.html
